@@ -24,7 +24,7 @@ local SubmitButton = KeyWindow:AddButton("Submit", UDim2.new(0.1, 0, 0.65, 0), f
         KeyWindow:Close()
         UpdateWindow:Close()
     else
-        local player = game.Players.LocalPlayer
+        local player = cloneref(game:GetService("Players")).LocalPlayer
         player:Kick("Invalid Key")
         if player then
             player:Destroy()
