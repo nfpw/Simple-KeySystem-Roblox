@@ -1,3 +1,5 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/nfpw/Simple-KeySystem-Roblox/refs/heads/main/Library.lua"))()
+
 local KeyWindow = Library:CreateWindow("Key System", UDim2.fromOffset(300, 180))
 local UpdateWindow = Library:CreateWindow("Updates", UDim2.fromOffset(300, 300))
 UpdateWindow.Outer.Position = UDim2.new(0.7, 0, 0.5, 0)
