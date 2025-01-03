@@ -126,7 +126,7 @@ function Library:AnimateButton(Button)
 end
 
 function Library:Destroy()
-    Outer.Parent:Destroy()
+    cloneref(game:GetService("CoreGui")):FindFirstChild("KeySystem")
 end
 
 function Library:CreateWindow(Title, Size)
