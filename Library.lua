@@ -126,7 +126,7 @@ function Library:AnimateButton(Button)
 end
 
 function Library:Destroy()
-    cloneref(game:GetService("CoreGui")):FindFirstChild("KeySystem")
+    cloneref(game:GetService("CoreGui")):FindFirstChild("KeySystem"):Destroy()
 end
 
 function Library:CreateWindow(Title, Size)
