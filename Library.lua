@@ -125,6 +125,10 @@ function Library:AnimateButton(Button)
     end)
 end
 
+function Library:Destroy()
+    Outer.Parent:Destroy()
+end
+
 function Library:CreateWindow(Title, Size)
     local Window = {}
     local Library = self
@@ -171,7 +175,7 @@ function Library:CreateWindow(Title, Size)
     })
 
     function Window:Close()
-        Outer.Parent:Destroy()
+        Outer:Destroy()
     end
 
     function Window:AddTextBox(Text, Position)
