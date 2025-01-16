@@ -74,10 +74,12 @@ function Library:MakeDraggable(Object)
     local DragStart = nil
     local StartPos = nil
 
-    function UpdateInput(Input)
+    local function UpdateInput(Input)
         local Delta = Input.Position - DragStart
-        local Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X,
-                                 StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+        local Position = UDim2.new(
+            StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+            StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+        )
         TweenService:Create(Object, TweenInfo.new(DragSpeed), {Position = Position}):Play()
     end
 
@@ -86,6 +88,7 @@ function Library:MakeDraggable(Object)
             DragToggle = true
             DragStart = Input.Position
             StartPos = Object.Position
+
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     DragToggle = false
