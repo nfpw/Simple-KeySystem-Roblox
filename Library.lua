@@ -68,40 +68,6 @@ function Library:CreateLabel(Properties)
     return Label
 end
 
-function Library:MakeDraggable(Object)
-    local DragToggle = false
-    local DragStart = nil
-    local StartPos = nil
-
-    local function UpdateInput(Input)
-        local Delta = Input.Position - DragStart
-        Object.Position = UDim2.new(
-            StartPos.X.Scale, StartPos.X.Offset + Delta.X,
-            StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
-        )
-    end
-
-    Object.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            DragToggle = true
-            DragStart = Input.Position
-            StartPos = Object.Position
-
-            Input.Changed:Connect(function()
-                if Input.UserInputState == Enum.UserInputState.End then
-                    DragToggle = false
-                end
-            end)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseMovement and DragToggle then
-            UpdateInput(Input)
-        end
-    end)
-end
-
 function Library:AddToRegistry(Object, Properties)
     self.RegistryMap[Object] = { Properties = Properties }
 end
