@@ -69,18 +69,16 @@ function Library:CreateLabel(Properties)
 end
 
 function Library:MakeDraggable(Object)
-    local DragToggle = nil
-    local DragSpeed = 0.25
+    local DragToggle = false
     local DragStart = nil
     local StartPos = nil
 
     local function UpdateInput(Input)
         local Delta = Input.Position - DragStart
-        local Position = UDim2.new(
+        Object.Position = UDim2.new(
             StartPos.X.Scale, StartPos.X.Offset + Delta.X,
             StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
         )
-        TweenService:Create(Object, TweenInfo.new(DragSpeed), {Position = Position}):Play()
     end
 
     Object.InputBegan:Connect(function(Input)
