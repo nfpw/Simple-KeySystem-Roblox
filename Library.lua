@@ -16,12 +16,23 @@ local UserInputService = cloneref(game:GetService("UserInputService"))
 local HttpService = cloneref(game:GetService("HttpService"))
 local CoreGui = cloneref(game:GetService("CoreGui"))
 
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+
+function GetMobileAdjustedSize(defaultSize)
+    if IsMobile then
+        return UDim2.new(defaultSize.X.Scale * 1.2, defaultSize.X.Offset, 
+                        defaultSize.Y.Scale * 1.2, defaultSize.Y.Offset)
+    end
+    return defaultSize
+end
+
 local ScreenGui = Instance.new("ScreenGui")
 ProtectGui(ScreenGui)
 ScreenGui.Name = "KeySystem"
 ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-function Library:SaveKey(KeyPath, FileName, key)
+Library.SaveKey = function(self, KeyPath, FileName, key)
     if not (isfolder and makefolder and writefile) then
         warn("File system functions are not available.")
         return
@@ -32,7 +43,7 @@ function Library:SaveKey(KeyPath, FileName, key)
     writefile(KeyPath .. "/" .. FileName, HttpService:JSONEncode({key = key}))
 end
 
-function Library:LoadKey(KeyPath, FileName)
+Library.LoadKey = function(self, KeyPath, FileName)
     if not (isfolder and readfile) then
         warn("File system functions are not available.")
         return nil
@@ -57,7 +68,7 @@ function Library:CreateLabel(Properties)
         BackgroundTransparency = 1,
         Font = self.Font,
         TextColor3 = self.TextColor,
-        TextSize = 14,
+        TextSize = IsMobile and 18 or 14,
         TextStrokeTransparency = 1,
     })
     
@@ -75,32 +86,37 @@ end
 function Library:AnimateButton(Button)
     local OriginalColor = Button.BackgroundColor3
     
-    Button.MouseEnter:Connect(function()
+    function OnEnter()
         local Tween = TweenService:Create(Button, TweenInfo.new(0.3), {
             BackgroundColor3 = self.AccentColor,
             TextColor3 = Color3.new(1, 1, 1)
         })
         Tween:Play()
-    end)
+    end
 
-    Button.MouseLeave:Connect(function()
+    function OnLeave()
         local Tween = TweenService:Create(Button, TweenInfo.new(0.3), {
             BackgroundColor3 = OriginalColor,
             TextColor3 = self.TextColor
         })
         Tween:Play()
-    end)
-end
+    end
 
-function Library:Destroy()
-    cloneref(game:GetService("CoreGui")):FindFirstChild("KeySystem"):Destroy()
+    if IsMobile then
+        Button.TouchStarted:Connect(OnEnter)
+        Button.TouchEnded:Connect(OnLeave)
+    else
+        Button.MouseEnter:Connect(OnEnter)
+        Button.MouseLeave:Connect(OnLeave)
+    end
 end
 
 function Library:MakeDraggable(Frame)
     local Dragging, DragInput, DragStart, StartPos
 
-    Frame.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+    function BeginDrag(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
             DragStart = Input.Position
             StartPos = Frame.Position
@@ -111,18 +127,23 @@ function Library:MakeDraggable(Frame)
                 end
             end)
         end
-    end)
+    end
 
-    Frame.InputChanged:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseMovement then
+    function UpdateDrag(Input)
+        if (Input.UserInputType == Enum.UserInputType.MouseMovement or
+            Input.UserInputType == Enum.UserInputType.Touch) then
             DragInput = Input
         end
-    end)
+    end
+
+    Frame.InputBegan:Connect(BeginDrag)
+    Frame.InputChanged:Connect(UpdateDrag)
 
     UserInputService.InputChanged:Connect(function(Input)
         if Input == DragInput and Dragging then
             local Delta = Input.Position - DragStart
-            Frame.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+            Frame.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+                                     StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
         end
     end)
 end
@@ -131,12 +152,14 @@ function Library:CreateWindow(Title, Size)
     local Window = {}
     local Library = self
 
+    local AdjustedSize = GetMobileAdjustedSize(Size or UDim2.fromOffset(300, 150))
+
     local Outer = Library:Create('Frame', {
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Library.OutlineColor,
         BorderSizePixel = 0,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = Size or UDim2.fromOffset(300, 150),
+        Size = AdjustedSize,
         Visible = true,
         ZIndex = 1,
         Parent = ScreenGui
@@ -156,7 +179,7 @@ function Library:CreateWindow(Title, Size)
 
     local TitleLabel = Library:CreateLabel({
         Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(0, 0, 0, 25),
+        Size = UDim2.new(0, 0, 0, IsMobile and 35 or 25),
         Text = Title,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 1,
@@ -166,22 +189,18 @@ function Library:CreateWindow(Title, Size)
     local MainSection = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor,
         BorderColor3 = Library.OutlineColor,
-        Position = UDim2.new(0, 8, 0, 25),
-        Size = UDim2.new(1, -16, 1, -33),
+        Position = UDim2.new(0, 8, 0, IsMobile and 35 or 25),
+        Size = UDim2.new(1, -16, 1, IsMobile and -43 or -33),
         ZIndex = 1,
         Parent = Inner
     })
-
-    function Window:Close()
-        Outer:Destroy()
-    end
 
     function Window:AddTextBox(Text, Position)
         local TextBoxContainer = Library:Create('Frame', {
             BackgroundColor3 = Library.MainColor,
             BorderColor3 = Library.OutlineColor,
             Position = Position,
-            Size = UDim2.new(0.8, 0, 0, 30),
+            Size = UDim2.new(0.8, 0, 0, IsMobile and 40 or 30),
             ZIndex = 2,
             Parent = MainSection
         })
@@ -200,26 +219,29 @@ function Library:CreateWindow(Title, Size)
             PlaceholderColor3 = Color3.new(0.7, 0.7, 0.7),
             Text = "",
             TextColor3 = Library.TextColor,
-            TextSize = 14,
+            TextSize = IsMobile and 18 or 14,
             ZIndex = 3,
             Parent = TextBoxContainer
         })
         
-        TextBox.Focused:Connect(function()
+        function OnFocus()
             local Tween = TweenService:Create(TextBoxContainer, TweenInfo.new(0.2), {
                 BackgroundColor3 = Library.AccentColor,
                 BorderColor3 = Library.AccentColor
             })
             Tween:Play()
-        end)
+        end
 
-        TextBox.FocusLost:Connect(function()
+        function OnUnfocus()
             local Tween = TweenService:Create(TextBoxContainer, TweenInfo.new(0.2), {
                 BackgroundColor3 = Library.MainColor,
                 BorderColor3 = Library.OutlineColor
             })
             Tween:Play()
-        end)
+        end
+
+        TextBox.Focused:Connect(OnFocus)
+        TextBox.FocusLost:Connect(OnUnfocus)
         
         return TextBox
     end
@@ -229,11 +251,11 @@ function Library:CreateWindow(Title, Size)
             BackgroundColor3 = Library.MainColor,
             BorderColor3 = Library.OutlineColor,
             Position = Position,
-            Size = UDim2.new(0.35, 0, 0, 30),
+            Size = UDim2.new(0.35, 0, 0, IsMobile and 40 or 30),
             Font = Library.Font,
             Text = Text,
             TextColor3 = Library.TextColor,
-            TextSize = 14,
+            TextSize = IsMobile and 18 or 14,
             ZIndex = 2,
             AutoButtonColor = false,
             Parent = MainSection
@@ -245,15 +267,24 @@ function Library:CreateWindow(Title, Size)
         })
         
         Library:AnimateButton(Button)
-        Button.MouseButton1Click:Connect(Callback)
+        
+        if IsMobile then
+            Button.TouchTap:Connect(Callback)
+        else
+            Button.MouseButton1Click:Connect(Callback)
+        end
+        
         return Button
     end
 
     function Window:AddToggle(Text, Position, DefaultState)
+        local ToggleSize = IsMobile and 30 or 20
+        
         local Toggle = Library:Create('Frame', {
             BackgroundTransparency = 1,
-            Position = UDim2.new(Position.X.Scale, Position.X.Offset, Position.Y.Scale, Position.Y.Offset + 10),
-            Size = UDim2.new(0.8, 0, 0, 20),
+            Position = UDim2.new(Position.X.Scale, Position.X.Offset, 
+                                Position.Y.Scale, Position.Y.Offset + (IsMobile and 15 or 10)),
+            Size = UDim2.new(0.8, 0, 0, ToggleSize),
             ZIndex = 2,
             Parent = MainSection
         })
@@ -262,7 +293,7 @@ function Library:CreateWindow(Title, Size)
             BackgroundColor3 = Library.MainColor,
             BorderColor3 = Library.OutlineColor,
             Position = UDim2.new(0, 0, 0, 0),
-            Size = UDim2.new(0, 20, 0, 20),
+            Size = UDim2.new(0, ToggleSize, 0, ToggleSize),
             ZIndex = 3,
             Parent = Toggle
         })
@@ -279,14 +310,14 @@ function Library:CreateWindow(Title, Size)
             Font = Enum.Font.GothamBold,
             Text = "✓",
             TextColor3 = Library.AccentColor,
-            TextSize = 14,
+            TextSize = IsMobile and 18 or 14,
             TextTransparency = DefaultState and 0 or 1,
             ZIndex = 4,
             Parent = Checkbox
         })
     
         local Label = Library:CreateLabel({
-            Position = UDim2.new(0, 30, 0, 0),
+            Position = UDim2.new(0, ToggleSize + 10, 0, 0),
             Size = UDim2.new(0.7, 0, 1, 0),
             Text = Text,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -296,15 +327,18 @@ function Library:CreateWindow(Title, Size)
     
         local State = DefaultState
         local Connection
-    
-        Connection = Toggle.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+        function ToggleState(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or
+               Input.UserInputType == Enum.UserInputType.Touch then
                 State = not State
                 TweenService:Create(Checkmark, TweenInfo.new(0.2), {
                     TextTransparency = State and 0 or 1
                 }):Play()
             end
-        end)
+        end
+    
+        Connection = Toggle.InputBegan:Connect(ToggleState)
     
         return {
             GetState = function() return State end,
